@@ -1,8 +1,104 @@
-import React from "react";
-
-const employeeList = ['', '', '', '', '', '', '', '']
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import CustomModal from "./CustomModal";
 
 function Employee() {
+    const [employeeList, setEmployeeList] = useState([]);
+    const [formData, setFormData] = useState({name: '', email: '', address: '', phone: ''});
+    const [isLoading, setIsLoading] = useState(false);
+    const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+    const [isDeleteVisible, setIsDeleteVisible] = useState(false);
+    const [isUpdateVisible, setIsUpdateVisible] = useState(false);
+    const [selectedData, setSelectedData] = useState({});
+
+    useEffect(() => {
+        fetchEmployee();
+        resetForm();
+    }, []);
+
+    const fetchEmployee = () => {
+        axios({
+            method: 'get',
+            url: 'https://jsonplaceholder.typicode.com/users',
+            responseType: 'json'
+        }).then(function (response) {
+            if (response?.data) {
+                setEmployeeList(response?.data);
+                setIsLoading(false);
+            }
+        }).catch(err => {
+            console.log('err======>', err)
+            setIsLoading(false);
+        });
+    }
+
+    const onClickAddOrUpdate = () => {
+        if (isUpdateVisible) {
+            axios({
+                method: 'put',
+                url: 'http://dummy.restapiexample.com/api/v1/update/'+selectedData?.id,
+                data: formData
+            }).then(function (response) {
+                console.log(response);
+                fetchEmployee();
+                setIsUpdateVisible(false);
+            }).catch(function (error) {
+                console.log(error);
+                setIsUpdateVisible(false);
+            });
+        } else {
+            axios({
+                method: 'post',
+                url: 'http://dummy.restapiexample.com/api/v1/create',
+                data: formData
+            }).then(function (response) {
+                console.log(response);
+                fetchEmployee();
+                setIsAddModalVisible(false);
+            }).catch(function (error) {
+                console.log(error);
+                setIsAddModalVisible(false);
+            });
+        }
+    }
+
+    const onClickDeleteSubmit = () => {
+        axios({
+            method: 'delete',
+            url: '	http://dummy.restapiexample.com/api/v1/delete/'+selectedData?.id,
+        }).then(function (response) {
+            // console.log('response==========>', response);
+            setIsDeleteVisible(false);
+            alert(response?.data?.message)
+        }).catch(function (error) {
+            console.log(error);
+        });
+    }
+
+    const onClickAddNew = () => {
+        setIsAddModalVisible(true);
+        resetForm();
+    }
+
+    const onClickAddNewClose = () => {
+        setIsAddModalVisible(false);
+        setIsUpdateVisible(false);
+        resetForm();
+    }
+
+    const onClickDelete = () => setIsDeleteVisible(true);
+
+    const onClickDeleteClose = () => setIsDeleteVisible(false);
+
+    const onClickEdit = () => {
+        console.log('selectedData ======>', selectedData);
+        const {name, email, phone, address: selectedAddress} = selectedData
+        setFormData({name, email, phone, address: selectedAddress?.street+', '+selectedAddress?.city+', '+selectedAddress?.zipcode});
+        setIsUpdateVisible(true);
+    }
+
+    const resetForm = () => setFormData({name: '', email: '', address: '', phone: ''});
+
     return (  
         <>
             <div class="card">
@@ -10,12 +106,12 @@ function Employee() {
                     <h3 class="card-title" style={{color: 'white'}}>Manage Employees</h3>
 
                     <div class="card-tools">
-                        <a class="btn btn-danger btn-sm" href="#" data-toggle="modal" data-target="#delete-employee-modal">
+                        <a class="btn btn-danger btn-sm" href="#" onClick={onClickDelete}>
                             <i class="fas fa-minus-circle">
                             </i>&nbsp;
                             Delete
                         </a>&nbsp;&nbsp;
-                        <a class="btn btn-success btn-sm" href="#" data-toggle="modal" data-target="#add-employee-modal">
+                        <a class="btn btn-success btn-sm" href="#" onClick={onClickAddNew}>
                             <i class="fas fa-plus">
                             </i>&nbsp;
                             Add New Employee
@@ -47,7 +143,7 @@ function Employee() {
                             </tr>
                         </thead>
                         <tbody>
-                            {employeeList.map(item => {
+                            {employeeList?.map(item => {
                                 return (
                                     <tr>
                                         <td>
@@ -55,30 +151,37 @@ function Employee() {
                                         </td>
                                         <td>
                                             <small>
-                                                Dummy User
+                                                {item?.name}
                                             </small>
                                         </td>
                                         <td>
                                             <small>
-                                                dummyuser@gmail.com
+                                                {item?.email}
                                             </small>
                                         </td>
                                         <td>
                                             <small>
-                                                25, Lenin serani, Kolkata - 700001
+                                                {item?.address?.street+', '+item?.address?.city+', '+item?.address?.zipcode}
                                             </small>
                                         </td>
                                         <td>
                                             <small>
-                                                +91 9999955555
+                                                {item?.phone}
                                             </small>
                                         </td>
                                         <td class="text-center">
-                                            <a class="btn btn-info btn-sm" href="#">
+                                            <a class="btn btn-info btn-sm" href="#" onClick={() => {
+                                                // onClickDelete();
+                                                onClickEdit();
+                                                setSelectedData(item);
+                                            }}>
                                                 <i class="fas fa-pencil-alt">
                                                 </i>
                                             </a>&nbsp;&nbsp;
-                                            <a class="btn btn-danger btn-sm" href="#" data-toggle="modal" data-target="#delete-employee-modal">
+                                            <a class="btn btn-danger btn-sm" href="#" onClick={() => {
+                                                onClickDelete();
+                                                setSelectedData(item);
+                                            }}>
                                                 <i class="fas fa-trash">
                                                 </i>
                                             </a>
@@ -91,69 +194,75 @@ function Employee() {
                 </div>
             </div>     
 
-            {/* ------- add model ------ start-------- */}
-            <div class="modal fade" id="add-employee-modal">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                        <h4 class="modal-title">Add Employee</h4>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        </div>
-                        <div class="modal-body">
-                            <form>
-                                <div class="card-body">
-                                    <div class="form-group">
-                                        <label for="name">Name</label>
-                                        <input type="text" class="form-control" id="name" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="email">Email address</label>
-                                        <input type="email" class="form-control" id="email" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="address">Address</label>
-                                        <textarea class="form-control" rows="2" ></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="phone">Phone</label>
-                                        <input type="text" class="form-control" id="phone" />
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-success">Add</button>
+            {/* ------ loader model ------ start  */}
+            {/* <div class="modal fade" id="modal-overlay">
+                <div class="modal-dialog modal-dialog-centered" style={{justifyContent: 'center'}}>
+                    <div class="modal-content" style={{ height: '80px', width: '80px'}}>
+                        <div class="overlay">
+                            <i class="fas fa-2x fa-sync fa-spin"></i>
                         </div>
                     </div>
                 </div>
-            </div>       
+            </div> */}
 
-            {/* ----- delete model ----- start ------- */}
-            <div class="modal fade" id="delete-employee-modal">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                        <h4 class="modal-title">Delete Employee</h4>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        </div>
-                        <div class="modal-body">
-                            <span>Are you sure you want to delete these Records?</span>
-                            <br />
-                            <br />
-                            <small style={{color: '#FFA500'}}>This action cannot be undone.</small>
-                        </div>
-                        <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-danger">Delete</button>
-                        </div>
+
+            <CustomModal isVisible={isAddModalVisible || isUpdateVisible} onClose={onClickAddNewClose}>
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h4 class="modal-title">Add Employee</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onClick={onClickAddNewClose}>
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="name">Name</label>
+                                    <input type="text" class="form-control" value={formData?.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email address</label>
+                                    <input type="email" class="form-control" value={formData?.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                </div>
+                                <div class="form-group">
+                                    <label for="address">Address</label>
+                                    <textarea class="form-control" rows="2" value={formData?.address} onChange={e => setFormData({...formData, address: e.target.value})}></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone</label>
+                                    <input type="text" class="form-control" value={formData?.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" onClick={onClickAddNewClose}>Close</button>
+                    <button type="button" class="btn btn-success" onClick={onClickAddOrUpdate}>{isUpdateVisible ? 'Update' : 'Add'}</button>
                     </div>
                 </div>
-            </div>    
+            </CustomModal>
+
+            <CustomModal isVisible={isDeleteVisible} onClose={onClickDeleteClose}>
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h4 class="modal-title">Delete Employee</h4>
+                    <button type="button" class="close" aria-label="Close" data-dismiss="modal" onClick={onClickDeleteClose}>
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>
+                    <div class="modal-body">
+                        <span>Are you sure you want to delete these Records?</span>
+                        <br />
+                        <br />
+                        <small style={{color: '#FFA500'}}>This action cannot be undone.</small>
+                    </div>
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" onClick={onClickDeleteClose}>Close</button>
+                    <button type="button" class="btn btn-danger" onClick={onClickDeleteSubmit}>Delete</button>
+                    </div>
+                </div>
+            </CustomModal>
         </>
     );
 }
