@@ -33,6 +33,7 @@ function Employee() {
     }
 
     const onClickAddOrUpdate = () => {
+        if (Object.keys(formData))
         if (isUpdateVisible) {
             axios({
                 method: 'put',
@@ -44,7 +45,8 @@ function Employee() {
                 setIsUpdateVisible(false);
             }).catch(function (error) {
                 console.log(error);
-                setIsUpdateVisible(false);
+                // setIsUpdateVisible(false);
+                alert(error.message);
             });
         } else {
             axios({
@@ -57,7 +59,8 @@ function Employee() {
                 setIsAddModalVisible(false);
             }).catch(function (error) {
                 console.log(error);
-                setIsAddModalVisible(false);
+                // setIsAddModalVisible(false);
+                alert(error.message);
             });
         }
     }
@@ -67,7 +70,6 @@ function Employee() {
             method: 'delete',
             url: '	http://dummy.restapiexample.com/api/v1/delete/'+selectedData?.id,
         }).then(function (response) {
-            // console.log('response==========>', response);
             setIsDeleteVisible(false);
             alert(response?.data?.message)
         }).catch(function (error) {
@@ -91,7 +93,6 @@ function Employee() {
     const onClickDeleteClose = () => setIsDeleteVisible(false);
 
     const onClickEdit = () => {
-        console.log('selectedData ======>', selectedData);
         const {name, email, phone, address: selectedAddress} = selectedData
         setFormData({name, email, phone, address: selectedAddress?.street+', '+selectedAddress?.city+', '+selectedAddress?.zipcode});
         setIsUpdateVisible(true);
@@ -106,11 +107,11 @@ function Employee() {
                     <h3 class="card-title" style={{color: 'white'}}>Manage Employees</h3>
 
                     <div class="card-tools">
-                        <a class="btn btn-danger btn-sm" href="#" onClick={onClickDelete}>
+                        {/* <a class="btn btn-danger btn-sm" href="#" onClick={onClickDelete}>
                             <i class="fas fa-minus-circle">
                             </i>&nbsp;
                             Delete
-                        </a>&nbsp;&nbsp;
+                        </a>&nbsp;&nbsp; */}
                         <a class="btn btn-success btn-sm" href="#" onClick={onClickAddNew}>
                             <i class="fas fa-plus">
                             </i>&nbsp;
@@ -193,18 +194,6 @@ function Employee() {
                     </table>
                 </div>
             </div>     
-
-            {/* ------ loader model ------ start  */}
-            {/* <div class="modal fade" id="modal-overlay">
-                <div class="modal-dialog modal-dialog-centered" style={{justifyContent: 'center'}}>
-                    <div class="modal-content" style={{ height: '80px', width: '80px'}}>
-                        <div class="overlay">
-                            <i class="fas fa-2x fa-sync fa-spin"></i>
-                        </div>
-                    </div>
-                </div>
-            </div> */}
-
 
             <CustomModal isVisible={isAddModalVisible || isUpdateVisible} onClose={onClickAddNewClose}>
                 <div class="modal-content">
